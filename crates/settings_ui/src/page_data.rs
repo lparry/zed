@@ -3285,17 +3285,13 @@ pub(crate) fn settings_data(cx: &App) -> Vec<SettingsPage> {
                     description: "How to order files and directories in the project panel",
                     field: Box::new(SettingField {
                         pick: |settings_content| {
-                            if let Some(project_panel) = &settings_content.project_panel {
-                                &project_panel.sort_mode
-                            } else {
-                                &None
-                            }
+                            settings_content.project_panel.as_ref()?.sort_mode.as_ref()
                         },
-                        pick_mut: |settings_content| {
-                            &mut settings_content
+                        write: |settings_content, value| {
+                            settings_content
                                 .project_panel
                                 .get_or_insert_default()
-                                .sort_mode
+                                .sort_mode = value;
                         },
                     }),
                     metadata: None,
