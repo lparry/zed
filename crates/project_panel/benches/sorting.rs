@@ -68,14 +68,14 @@ fn criterion_benchmark(c: &mut Criterion) {
         );
     });
 
-    // Benchmark Interleaved mode
-    c.bench_function("Sort linux worktree snapshot (Interleaved)", |b| {
+    // Benchmark Mixed mode
+    c.bench_function("Sort linux worktree snapshot (Mixed)", |b| {
         b.iter_batched(
             || snapshot.clone(),
             |mut snapshot| {
                 par_sort_worktree_entries_with_mode(
                     &mut snapshot,
-                    ProjectPanelSortMode::Interleaved,
+                    ProjectPanelSortMode::Mixed,
                 )
             },
             criterion::BatchSize::LargeInput,

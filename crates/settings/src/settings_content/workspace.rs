@@ -619,9 +619,9 @@ pub enum ProjectPanelSortMode {
     /// Directories are listed before files (current default behavior)
     #[default]
     DirectoriesFirst,
-    /// Directories and files are interleaved together by natural name ordering (macOS Finder style)
-    Interleaved,
-    /// Like Interleaved, but with case-insensitive sorting (true macOS Finder behavior)
+    /// Directories and files are mixed together by natural name ordering (macOS Finder style)
+    Mixed,
+    /// Like Mixed, but with case-insensitive sorting (true macOS Finder behavior)
     MacosLike,
 }
 

@@ -6954,7 +6954,7 @@ async fn test_sort_mode_default_fallback(cx: &mut gpui::TestAppContext) {
     );
 }
 
-/// Test sort modes: DirectoriesFirst (default) vs Interleaved
+/// Test sort modes: DirectoriesFirst (default) vs Mixed
 #[gpui::test]
 async fn test_sort_mode_directories_first(cx: &mut gpui::TestAppContext) {
     init_test(cx);
@@ -6993,7 +6993,7 @@ async fn test_sort_mode_directories_first(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
-async fn test_sort_mode_interleaved(cx: &mut gpui::TestAppContext) {
+async fn test_sort_mode_mixed(cx: &mut gpui::TestAppContext) {
     init_test(cx);
 
     let fs = FakeFs::new(cx.executor());
@@ -7013,12 +7013,12 @@ async fn test_sort_mode_interleaved(cx: &mut gpui::TestAppContext) {
     let workspace = cx.add_window(|window, cx| Workspace::test_new(project.clone(), window, cx));
     let cx = &mut VisualTestContext::from_window(*workspace, cx);
 
-    // Switch to Interleaved mode
+    // Switch to Mixed mode
     cx.update(|_, cx| {
         cx.update_global::<SettingsStore, _>(|store, cx| {
             store.update_user_settings(cx, |settings| {
                 settings.project_panel.get_or_insert_default().sort_mode =
-                    Some(settings::ProjectPanelSortMode::Interleaved);
+                    Some(settings::ProjectPanelSortMode::Mixed);
             });
         });
     });
@@ -7026,7 +7026,7 @@ async fn test_sort_mode_interleaved(cx: &mut gpui::TestAppContext) {
     let panel = workspace.update(cx, ProjectPanel::new).unwrap();
     cx.run_until_parked();
 
-    // Interleaved mode: files and directories mixed by natural name
+    // Mixed mode: files and directories mixed by natural name
     assert_eq!(
         visible_entries_as_strings(&panel, 0..50, cx),
         &[
@@ -7074,7 +7074,7 @@ async fn test_sort_mode_macos_like(cx: &mut gpui::TestAppContext) {
     let panel = workspace.update(cx, ProjectPanel::new).unwrap();
     cx.run_until_parked();
 
-    // MacosLike mode: case-insensitive interleaved sorting
+    // MacosLike mode: case-insensitive mixed sorting
     // Aardvark < apple < Banana < carrot < Zebra (all case-insensitive)
     assert_eq!(
         visible_entries_as_strings(&panel, 0..50, cx),
@@ -7116,12 +7116,12 @@ async fn test_sort_mode_toggle(cx: &mut gpui::TestAppContext) {
         &["v root", "    > dir1", "      file1.txt", "      file2.txt",]
     );
 
-    // Toggle to Interleaved
+    // Toggle to Mixed
     cx.update(|_, cx| {
         cx.update_global::<SettingsStore, _>(|store, cx| {
             store.update_user_settings(cx, |settings| {
                 settings.project_panel.get_or_insert_default().sort_mode =
-                    Some(settings::ProjectPanelSortMode::Interleaved);
+                    Some(settings::ProjectPanelSortMode::Mixed);
             });
         });
     });

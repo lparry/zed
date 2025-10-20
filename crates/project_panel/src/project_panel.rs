@@ -681,7 +681,7 @@ impl ProjectPanel {
                     }
                     // Resort visible entries when sort mode changes. The update_visible_entries
                     // call re-builds and re-sorts the worktree entry list using the newly
-                    // selected comparator (cmp_directories_first or cmp_interleaved). This
+                    // selected comparator (cmp_directories_first or cmp_mixed). This
                     // ensures the panel reflects the user's sort preference immediately.
                     if project_panel_settings.sort_mode != new_settings.sort_mode {
                         this.update_visible_entries(None, false, false, window, cx);
@@ -6077,8 +6077,8 @@ fn cmp_directories_first(a: &Entry, b: &Entry) -> cmp::Ordering {
 }
 
 #[inline]
-fn cmp_interleaved(a: &Entry, b: &Entry) -> cmp::Ordering {
-    util::paths::compare_rel_paths_interleaved((&a.path, a.is_file()), (&b.path, b.is_file()))
+fn cmp_mixed(a: &Entry, b: &Entry) -> cmp::Ordering {
+    util::paths::compare_rel_paths_mixed((&a.path, a.is_file()), (&b.path, b.is_file()))
 }
 
 #[inline]
@@ -6090,7 +6090,7 @@ fn cmp_macos_like(a: &Entry, b: &Entry) -> cmp::Ordering {
 fn cmp_with_mode(a: &Entry, b: &Entry, mode: &settings::ProjectPanelSortMode) -> cmp::Ordering {
     match mode {
         settings::ProjectPanelSortMode::DirectoriesFirst => cmp_directories_first(a, b),
-        settings::ProjectPanelSortMode::Interleaved => cmp_interleaved(a, b),
+        settings::ProjectPanelSortMode::Mixed => cmp_mixed(a, b),
         settings::ProjectPanelSortMode::MacosLike => cmp_macos_like(a, b),
     }
 }

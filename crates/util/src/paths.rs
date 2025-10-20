@@ -1076,7 +1076,7 @@ pub fn compare_rel_paths(
     }
 }
 
-/// Compare two relative paths for an interleaved ordering (files and directories
+/// Compare two relative paths for a mixed ordering (files and directories
 /// mixed together) using natural ordering of path components. Differs from
 /// `compare_rel_paths` only in that it omits the initial file/dir bias so that
 /// directories and files sort together purely by name. Maintains identical
@@ -1084,7 +1084,7 @@ pub fn compare_rel_paths(
 /// ordered deterministically. Adds a final full-path tie breaker to guarantee
 /// a total ordering when earlier comparisons consider two distinct entries
 /// equal (e.g. a directory `foo/` vs file `foo.rs`).
-pub fn compare_rel_paths_interleaved(
+pub fn compare_rel_paths_mixed(
     (path_a, a_is_file): (&RelPath, bool),
     (path_b, b_is_file): (&RelPath, bool),
 ) -> Ordering {
@@ -1149,7 +1149,7 @@ pub fn compare_rel_paths_interleaved(
     }
 }
 
-/// Compare two relative paths for macOS Finder-like ordering: interleaved files
+/// Compare two relative paths for macOS Finder-like ordering: mixed files
 /// and directories with case-insensitive natural sorting. This matches the actual
 /// behavior of macOS Finder where "Apple", "aardvark.txt", and "Zebra" would be
 /// sorted as: aardvark.txt, Apple, Zebra (case-insensitive alphabetical).
@@ -1377,8 +1377,8 @@ mod tests {
     }
 
     #[perf]
-    fn compare_rel_paths_interleaved_mixed_types() {
-        // Test that directories and files are interleaved by natural name ordering
+    fn compare_rel_paths_mixed_mixed_types() {
+        // Test that directories and files are mixed by natural name ordering
         let mut paths = vec![
             (RelPath::unix("zebra.txt").unwrap(), true),
             (RelPath::unix("Apple").unwrap(), false),
@@ -1386,7 +1386,7 @@ mod tests {
             (RelPath::unix("Carrot").unwrap(), false),
             (RelPath::unix("aardvark.txt").unwrap(), true),
         ];
-        paths.sort_by(|&a, &b| compare_rel_paths_interleaved(a, b));
+        paths.sort_by(|&a, &b| compare_rel_paths_mixed(a, b));
         assert_eq!(
             paths,
             vec![
@@ -1400,7 +1400,7 @@ mod tests {
     }
 
     #[perf]
-    fn compare_rel_paths_interleaved_numeric_segments() {
+    fn compare_rel_paths_mixed_numeric_segments() {
         // Test natural sort with numeric segments across mixed types
         let mut paths = vec![
             (RelPath::unix("file10.txt").unwrap(), true),
@@ -1409,7 +1409,7 @@ mod tests {
             (RelPath::unix("dir10").unwrap(), false),
             (RelPath::unix("file1.txt").unwrap(), true),
         ];
-        paths.sort_by(|&a, &b| compare_rel_paths_interleaved(a, b));
+        paths.sort_by(|&a, &b| compare_rel_paths_mixed(a, b));
         assert_eq!(
             paths,
             vec![
@@ -1423,7 +1423,7 @@ mod tests {
     }
 
     #[perf]
-    fn compare_rel_paths_interleaved_basename_collision() {
+    fn compare_rel_paths_mixed_basename_collision() {
         // Test deterministic ordering when directory and file share basename (e.g. foo/ vs foo.rs)
         let mut paths = vec![
             (RelPath::unix("foo.rs").unwrap(), true),
@@ -1431,7 +1431,7 @@ mod tests {
             (RelPath::unix("bar.rs").unwrap(), true),
             (RelPath::unix("bar").unwrap(), false),
         ];
-        paths.sort_by(|&a, &b| compare_rel_paths_interleaved(a, b));
+        paths.sort_by(|&a, &b| compare_rel_paths_mixed(a, b));
         // Expect deterministic tie-break via full-path fallback; directory "bar" before "bar.rs",
         // directory "foo" before "foo.rs" (lexical full-path fallback when stem equal)
         assert_eq!(
@@ -1446,16 +1446,16 @@ mod tests {
     }
 
     #[perf]
-    fn compare_rel_paths_interleaved_stability() {
+    fn compare_rel_paths_mixed_stability() {
         // Test that double-sorting yields identical result (stability)
         let mut paths = vec![
             (RelPath::unix("c.txt").unwrap(), true),
             (RelPath::unix("a").unwrap(), false),
             (RelPath::unix("b.rs").unwrap(), true),
         ];
-        paths.sort_by(|&a, &b| compare_rel_paths_interleaved(a, b));
+        paths.sort_by(|&a, &b| compare_rel_paths_mixed(a, b));
         let first_sort = paths.clone();
-        paths.sort_by(|&a, &b| compare_rel_paths_interleaved(a, b));
+        paths.sort_by(|&a, &b| compare_rel_paths_mixed(a, b));
         assert_eq!(
             first_sort, paths,
             "Double sort should yield identical order"
@@ -1463,14 +1463,14 @@ mod tests {
     }
 
     #[perf]
-    fn compare_rel_paths_interleaved_nested_paths() {
+    fn compare_rel_paths_mixed_nested_paths() {
         // Ensure parent directories still precede descendants (same as directories_first mode)
         let mut paths = vec![
             (RelPath::unix("root/child.txt").unwrap(), true),
             (RelPath::unix("root").unwrap(), false),
             (RelPath::unix("other.txt").unwrap(), true),
         ];
-        paths.sort_by(|&a, &b| compare_rel_paths_interleaved(a, b));
+        paths.sort_by(|&a, &b| compare_rel_paths_mixed(a, b));
         assert_eq!(
             paths,
             vec![
@@ -1482,7 +1482,7 @@ mod tests {
     }
 
     #[perf]
-    fn compare_rel_paths_interleaved_extensions() {
+    fn compare_rel_paths_mixed_extensions() {
         // Files with same stem but different extensions should sort by extension
         let mut paths = vec![
             (RelPath::unix("file.rs").unwrap(), true),
@@ -1491,7 +1491,7 @@ mod tests {
             (RelPath::unix("file").unwrap(), true),
             (RelPath::unix("file.a").unwrap(), true),
         ];
-        paths.sort_by(|&a, &b| compare_rel_paths_interleaved(a, b));
+        paths.sort_by(|&a, &b| compare_rel_paths_mixed(a, b));
         assert_eq!(
             paths,
             vec![
@@ -1549,8 +1549,8 @@ mod tests {
     }
 
     #[perf]
-    fn compare_rel_paths_macos_like_interleaved() {
-        // Verify directories and files are still interleaved
+    fn compare_rel_paths_macos_like_mixed() {
+        // Verify directories and files are still mixed
         let mut paths = vec![
             (RelPath::unix("file2.txt").unwrap(), true),
             (RelPath::unix("Dir1").unwrap(), false),
@@ -1558,7 +1558,7 @@ mod tests {
             (RelPath::unix("dir2").unwrap(), false),
         ];
         paths.sort_by(|&a, &b| compare_rel_paths_macos_like(a, b));
-        // Case-insensitive: dir1, dir2, file1, file2 (all interleaved)
+        // Case-insensitive: dir1, dir2, file1, file2 (all mixed)
         assert_eq!(
             paths,
             vec![
