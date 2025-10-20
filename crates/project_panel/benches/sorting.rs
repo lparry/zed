@@ -45,7 +45,6 @@ fn load_linux_repo_snapshot() -> Vec<GitEntry> {
 fn criterion_benchmark(c: &mut Criterion) {
     let snapshot = load_linux_repo_snapshot();
 
-    // Benchmark legacy function (defaults to DirectoriesFirst)
     c.bench_function("Sort linux worktree snapshot (legacy)", |b| {
         b.iter_batched(
             || snapshot.clone(),
@@ -54,7 +53,6 @@ fn criterion_benchmark(c: &mut Criterion) {
         );
     });
 
-    // Benchmark DirectoriesFirst mode explicitly
     c.bench_function("Sort linux worktree snapshot (DirectoriesFirst)", |b| {
         b.iter_batched(
             || snapshot.clone(),
@@ -68,7 +66,6 @@ fn criterion_benchmark(c: &mut Criterion) {
         );
     });
 
-    // Benchmark Mixed mode
     c.bench_function("Sort linux worktree snapshot (Mixed)", |b| {
         b.iter_batched(
             || snapshot.clone(),
@@ -82,7 +79,6 @@ fn criterion_benchmark(c: &mut Criterion) {
         );
     });
 
-    // Benchmark MacosLike mode
     c.bench_function("Sort linux worktree snapshot (MacosLike)", |b| {
         b.iter_batched(
             || snapshot.clone(),

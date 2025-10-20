@@ -679,10 +679,6 @@ impl ProjectPanel {
                     if project_panel_settings.hide_hidden != new_settings.hide_hidden {
                         this.update_visible_entries(None, false, false, window, cx);
                     }
-                    // Resort visible entries when sort mode changes. The update_visible_entries
-                    // call re-builds and re-sorts the worktree entry list using the newly
-                    // selected comparator (cmp_directories_first or cmp_mixed). This
-                    // ensures the panel reflects the user's sort preference immediately.
                     if project_panel_settings.sort_mode != new_settings.sort_mode {
                         this.update_visible_entries(None, false, false, window, cx);
                     }
@@ -6095,7 +6091,6 @@ fn cmp_with_mode(a: &Entry, b: &Entry, mode: &settings::ProjectPanelSortMode) ->
     }
 }
 
-/// Sort entries using the provided ProjectPanelSortMode.
 pub fn sort_worktree_entries_with_mode(
     entries: &mut [impl AsRef<Entry>],
     mode: settings::ProjectPanelSortMode,
@@ -6103,17 +6098,11 @@ pub fn sort_worktree_entries_with_mode(
     entries.sort_by(|lhs, rhs| cmp_with_mode(lhs.as_ref(), rhs.as_ref(), &mode));
 }
 
-/// Parallel sort entries using the provided ProjectPanelSortMode.
 pub fn par_sort_worktree_entries_with_mode(
     entries: &mut Vec<GitEntry>,
     mode: settings::ProjectPanelSortMode,
 ) {
     entries.par_sort_by(|lhs, rhs| cmp_with_mode(lhs, rhs, &mode));
-}
-
-/// Legacy wrappers (retain for backward compatibility).
-pub fn sort_worktree_entries(entries: &mut [impl AsRef<Entry>]) {
-    sort_worktree_entries_with_mode(entries, settings::ProjectPanelSortMode::DirectoriesFirst);
 }
 
 pub fn par_sort_worktree_entries(entries: &mut Vec<GitEntry>) {
