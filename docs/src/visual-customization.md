@@ -443,7 +443,7 @@ Project panel can be shown/hidden with {#action project_panel::ToggleFocus} ({#k
       "show": "always"
     },
     // How to sort entries in the project panel.
-    // Options: directories_first (default), interleaved, macos_like
+    // Options: directories_first (default), mixed, macos_like
     "sort_mode": "directories_first",
     // Whether to hide the root entry when only one folder is open in the window.
     "hide_root": false,
@@ -457,8 +457,8 @@ Project panel can be shown/hidden with {#action project_panel::ToggleFocus} ({#k
 The project panel supports three different sorting modes for files and folders:
 
 - **`directories_first`** (default): Groups all directories before files, with natural sorting within each group. This is the traditional behavior.
-- **`interleaved`**: Sorts files and directories together alphabetically, similar to macOS Finder's "Sort by Name" option.
-- **`macos_like`**: Like interleaved, but uses case-insensitive sorting to match macOS Finder behavior more closely (e.g., "Apple" and "apple" are treated as the same for sorting purposes).
+- **`mixed`**: Sorts files and directories together alphabetically, similar to macOS Finder's "Sort by Name" option.
+- **`macos_like`**: Like mixed, but uses case-insensitive sorting to match macOS Finder behavior more closely (e.g., "Apple" and "apple" are treated as the same for sorting purposes).
 
 All modes use natural sorting for numbers (e.g., "file10.txt" comes after "file2.txt").
 
