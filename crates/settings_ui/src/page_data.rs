@@ -3451,6 +3451,28 @@ pub(crate) fn settings_data(cx: &App) -> Vec<SettingsPage> {
                     files: USER,
                 }),
                 SettingsPageItem::SettingItem(SettingItem {
+                    title: "Directory Sort",
+                    description: "Control whether directories appear before, mixed with, or after files.",
+                    field: Box::new(SettingField {
+                        json_path: Some("project_panel.directory_sort"),
+                        pick: |settings_content| {
+                            settings_content
+                                .project_panel
+                                .as_ref()?
+                                .directory_sort
+                                .as_ref()
+                        },
+                        write: |settings_content, value| {
+                            settings_content
+                                .project_panel
+                                .get_or_insert_default()
+                                .directory_sort = value;
+                        },
+                    }),
+                    metadata: None,
+                    files: USER,
+                }),
+                SettingsPageItem::SettingItem(SettingItem {
                     title: "File Icons",
                     description: "Show file icons in the project panel.",
                     field: Box::new(SettingField {

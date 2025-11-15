@@ -944,9 +944,45 @@ pub fn natural_sort(a: &str, b: &str) -> Ordering {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DirectorySortOrder {
+    DirectoriesFirst,
+    Mixed,
+    DirectoriesLast,
+}
+
+impl Default for DirectorySortOrder {
+    fn default() -> Self {
+        Self::DirectoriesFirst
+    }
+}
+
+impl DirectorySortOrder {
+    #[inline]
+    fn ordering(self, a_is_file: bool, b_is_file: bool) -> Ordering {
+        match self {
+            DirectorySortOrder::DirectoriesFirst => a_is_file.cmp(&b_is_file),
+            DirectorySortOrder::Mixed => Ordering::Equal,
+            DirectorySortOrder::DirectoriesLast => b_is_file.cmp(&a_is_file),
+        }
+    }
+}
+
 pub fn compare_rel_paths(
     (path_a, a_is_file): (&RelPath, bool),
     (path_b, b_is_file): (&RelPath, bool),
+) -> Ordering {
+    compare_rel_paths_with_directory_sort(
+        (path_a, a_is_file),
+        (path_b, b_is_file),
+        DirectorySortOrder::DirectoriesFirst,
+    )
+}
+
+pub fn compare_rel_paths_with_directory_sort(
+    (path_a, a_is_file): (&RelPath, bool),
+    (path_b, b_is_file): (&RelPath, bool),
+    directory_sort: DirectorySortOrder,
 ) -> Ordering {
     let mut components_a = path_a.components();
     let mut components_b = path_b.components();
@@ -980,7 +1016,9 @@ pub fn compare_rel_paths(
                 let a_is_file = a_is_file && components_a.rest().is_empty();
                 let b_is_file = b_is_file && components_b.rest().is_empty();
 
-                let ordering = a_is_file.cmp(&b_is_file).then_with(|| {
+                let ordering = directory_sort
+                    .ordering(a_is_file, b_is_file)
+                    .then_with(|| {
                     let (a_stem, a_extension) = a_is_file
                         .then(|| stem_and_extension(component_a))
                         .unwrap_or_default();
@@ -1024,6 +1062,18 @@ pub fn compare_paths(
     (path_a, a_is_file): (&Path, bool),
     (path_b, b_is_file): (&Path, bool),
 ) -> Ordering {
+    compare_paths_with_directory_sort(
+        (path_a, a_is_file),
+        (path_b, b_is_file),
+        DirectorySortOrder::DirectoriesFirst,
+    )
+}
+
+pub fn compare_paths_with_directory_sort(
+    (path_a, a_is_file): (&Path, bool),
+    (path_b, b_is_file): (&Path, bool),
+    directory_sort: DirectorySortOrder,
+) -> Ordering {
     let mut components_a = path_a.components().peekable();
     let mut components_b = path_b.components().peekable();
 
@@ -1033,7 +1083,9 @@ pub fn compare_paths(
                 let a_is_file = components_a.peek().is_none() && a_is_file;
                 let b_is_file = components_b.peek().is_none() && b_is_file;
 
-                let ordering = a_is_file.cmp(&b_is_file).then_with(|| {
+                let ordering = directory_sort
+                    .ordering(a_is_file, b_is_file)
+                    .then_with(|| {
                     let path_a = Path::new(component_a.as_os_str());
                     let path_string_a = if a_is_file {
                         path_a.file_stem()
@@ -1262,6 +1314,47 @@ mod tests {
             vec![
                 ".config", "Dir1", "dir01", "dir2", "Dir02", "dir10", "Dir10"
             ]
+        );
+    }
+
+    #[test]
+    fn compare_rel_paths_respects_directory_sort() {
+        let dir_aaa = RelPath::unix("aaa").unwrap();
+        let dir_zzz = RelPath::unix("zzz").unwrap();
+        let file_aaa = RelPath::unix("aaa.txt").unwrap();
+        let file_zzz = RelPath::unix("zzz.txt").unwrap();
+
+        assert_eq!(
+            compare_rel_paths_with_directory_sort(
+                (&dir_zzz, false),
+                (&file_aaa, true),
+                DirectorySortOrder::DirectoriesFirst,
+            ),
+            Ordering::Less
+        );
+        assert_eq!(
+            compare_rel_paths_with_directory_sort(
+                (&dir_zzz, false),
+                (&file_aaa, true),
+                DirectorySortOrder::Mixed,
+            ),
+            Ordering::Greater
+        );
+        assert_eq!(
+            compare_rel_paths_with_directory_sort(
+                (&dir_aaa, false),
+                (&file_zzz, true),
+                DirectorySortOrder::DirectoriesLast,
+            ),
+            Ordering::Greater
+        );
+        assert_eq!(
+            compare_rel_paths_with_directory_sort(
+                (&dir_aaa, false),
+                (&file_zzz, true),
+                DirectorySortOrder::Mixed,
+            ),
+            Ordering::Less
         );
     }
 

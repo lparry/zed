@@ -5601,6 +5601,57 @@ async fn test_delete_all_files_and_directories(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
+async fn test_directory_sort_directories_first(cx: &mut gpui::TestAppContext) {
+    init_test(cx);
+    set_directory_sort(cx, ProjectPanelDirectorySort::DirectoriesFirst);
+    let entries = directory_sort_listing(cx).await;
+    assert_eq!(
+        entries,
+        expect_lines(&[
+            "v project_root",
+            "    > m_dir",
+            "    > z_dir",
+            "      a_file.rs",
+            "      n_file.txt",
+        ])
+    );
+}
+
+#[gpui::test]
+async fn test_directory_sort_mixed(cx: &mut gpui::TestAppContext) {
+    init_test(cx);
+    set_directory_sort(cx, ProjectPanelDirectorySort::Mixed);
+    let entries = directory_sort_listing(cx).await;
+    assert_eq!(
+        entries,
+        expect_lines(&[
+            "v project_root",
+            "      a_file.rs",
+            "    > m_dir",
+            "      n_file.txt",
+            "    > z_dir",
+        ])
+    );
+}
+
+#[gpui::test]
+async fn test_directory_sort_directories_last(cx: &mut gpui::TestAppContext) {
+    init_test(cx);
+    set_directory_sort(cx, ProjectPanelDirectorySort::DirectoriesLast);
+    let entries = directory_sort_listing(cx).await;
+    assert_eq!(
+        entries,
+        expect_lines(&[
+            "v project_root",
+            "      a_file.rs",
+            "      n_file.txt",
+            "    > m_dir",
+            "    > z_dir",
+        ])
+    );
+}
+
+#[gpui::test]
 async fn test_nested_selection_deletion(cx: &mut gpui::TestAppContext) {
     init_test_with_editor(cx);
 
@@ -7756,6 +7807,16 @@ fn set_auto_open_settings(
     });
 }
 
+fn set_directory_sort(cx: &mut TestAppContext, sort: ProjectPanelDirectorySort) {
+    cx.update(|cx| {
+        cx.update_global::<SettingsStore, _>(|store, cx| {
+            store.update_user_settings(cx, |settings| {
+                settings.project_panel.get_or_insert_default().directory_sort = Some(sort);
+            });
+        });
+    });
+}
+
 fn ensure_single_file_is_opened(
     window: &WindowHandle<Workspace>,
     expected_path: &str,
@@ -7782,6 +7843,31 @@ fn ensure_single_file_is_opened(
             );
         })
         .unwrap();
+}
+
+async fn directory_sort_listing(cx: &mut gpui::TestAppContext) -> Vec<String> {
+    let fs = FakeFs::new(cx.executor());
+    fs.insert_tree(
+        "/project_root",
+        json!({
+            "m_dir": {},
+            "z_dir": {},
+            "a_file.rs": "// a file",
+            "n_file.txt": "// another file",
+        }),
+    )
+    .await;
+
+    let project = Project::test(fs.clone(), ["/project_root".as_ref()], cx).await;
+    let workspace = cx.add_window(|window, cx| Workspace::test_new(project.clone(), window, cx));
+    let cx = &mut VisualTestContext::from_window(*workspace, cx);
+    let panel = workspace.update(cx, ProjectPanel::new).unwrap();
+    cx.run_until_parked();
+    visible_entries_as_strings(&panel, 0..10, cx)
+}
+
+fn expect_lines(lines: &[&str]) -> Vec<String> {
+    lines.iter().map(|line| line.to_string()).collect()
 }
 
 fn submit_deletion(panel: &Entity<ProjectPanel>, cx: &mut VisualTestContext) {

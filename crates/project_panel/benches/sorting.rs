@@ -2,14 +2,13 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use project::{Entry, EntryKind, GitEntry, ProjectEntryId};
 use project_panel::par_sort_worktree_entries;
 use std::sync::Arc;
-use util::rel_path::RelPath;
+use util::{paths::DirectorySortOrder, rel_path::RelPath};
+
+const LINUX_REPO_SNAPSHOT: &str = include_str!("linux_repo_snapshot.txt");
 
 fn load_linux_repo_snapshot() -> Vec<GitEntry> {
-    let file = std::fs::read_to_string(
-        "/Users/hiro/Projects/zed/crates/project_panel/benches/linux_repo_snapshot.txt",
-    )
-    .expect("Failed to read file");
-    file.lines()
+    LINUX_REPO_SNAPSHOT
+        .lines()
         .filter_map(|line| {
             let kind = match line.chars().next() {
                 Some('f') => EntryKind::File,
@@ -40,15 +39,25 @@ fn load_linux_repo_snapshot() -> Vec<GitEntry> {
         })
         .collect()
 }
+
 fn criterion_benchmark(c: &mut Criterion) {
     let snapshot = load_linux_repo_snapshot();
-    c.bench_function("Sort linux worktree snapshot", |b| {
-        b.iter_batched(
-            || snapshot.clone(),
-            |mut snapshot| par_sort_worktree_entries(&mut snapshot),
-            criterion::BatchSize::LargeInput,
+    for (order, label) in [
+        (DirectorySortOrder::DirectoriesFirst, "directories_first"),
+        (DirectorySortOrder::Mixed, "mixed"),
+        (DirectorySortOrder::DirectoriesLast, "directories_last"),
+    ] {
+        c.bench_function(
+            &format!("Sort linux worktree snapshot/{label}"),
+            |b| {
+                b.iter_batched(
+                    || snapshot.clone(),
+                    |mut snapshot| par_sort_worktree_entries(&mut snapshot, order),
+                    criterion::BatchSize::LargeInput,
+                );
+            },
         );
-    });
+    }
 }
 
 criterion_group!(benches, criterion_benchmark);

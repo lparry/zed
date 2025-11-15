@@ -551,6 +551,10 @@ pub struct ProjectPanelSettingsContent {
     ///
     /// Default: comfortable
     pub entry_spacing: Option<ProjectPanelEntrySpacing>,
+    /// How to order directories relative to files.
+    ///
+    /// Default: directories_first
+    pub directory_sort: Option<ProjectPanelDirectorySort>,
     /// Whether to show file icons in the project panel.
     ///
     /// Default: true
@@ -632,6 +636,31 @@ pub enum ProjectPanelEntrySpacing {
     Comfortable,
     /// The standard spacing of entries.
     Standard,
+}
+
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Default,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    MergeFrom,
+    PartialEq,
+    Eq,
+    strum::VariantArray,
+    strum::VariantNames,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectPanelDirectorySort {
+    /// Directories are always listed before files.
+    #[default]
+    DirectoriesFirst,
+    /// Directories and files are sorted together.
+    Mixed,
+    /// Directories are always listed after files.
+    DirectoriesLast,
 }
 
 #[skip_serializing_none]

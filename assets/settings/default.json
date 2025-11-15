@@ -685,6 +685,8 @@
     "dock": "left",
     // Spacing between worktree entries in the project panel. Can be 'comfortable' or 'standard'.
     "entry_spacing": "comfortable",
+    // How to order directories relative to files. Can be 'directories_first', 'mixed', or 'directories_last'.
+    "directory_sort": "directories_first",
     // Whether to show file icons in the project panel.
     "file_icons": true,
     // Whether to show folder icons or chevrons for directories in the project panel.

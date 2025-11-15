@@ -656,6 +656,7 @@ impl VsCodeSettings {
             dock: None,
             drag_and_drop: None,
             entry_spacing: None,
+            directory_sort: None,
             file_icons: None,
             folder_icons: None,
             git_status: self.read_bool("git.decorations.enabled"),

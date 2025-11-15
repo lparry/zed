@@ -38,8 +38,8 @@ use rayon::slice::ParallelSliceMut;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use settings::{
-    DockSide, ProjectPanelEntrySpacing, Settings, SettingsStore, ShowDiagnostics, ShowIndentGuides,
-    update_settings_file,
+    DockSide, ProjectPanelDirectorySort, ProjectPanelEntrySpacing, Settings, SettingsStore,
+    ShowDiagnostics, ShowIndentGuides, update_settings_file,
 };
 use smallvec::SmallVec;
 use std::{any::TypeId, time::Instant};
@@ -59,7 +59,14 @@ use ui::{
     ScrollAxes, ScrollableHandle, Scrollbars, StickyCandidate, Tooltip, WithScrollbar, prelude::*,
     v_flex,
 };
-use util::{ResultExt, TakeUntilExt, TryFutureExt, maybe, paths::compare_paths, rel_path::RelPath};
+use util::{
+    ResultExt, TakeUntilExt, TryFutureExt, maybe,
+    paths::{
+        compare_paths_with_directory_sort, compare_rel_paths_with_directory_sort,
+        DirectorySortOrder,
+    },
+    rel_path::RelPath,
+};
 use workspace::{
     DraggedSelection, OpenInTerminal, OpenOptions, OpenVisible, PreviewTabsSettings, SelectedEntry,
     SplitDirection, Workspace,
@@ -701,6 +708,9 @@ impl ProjectPanel {
                         this.update_visible_entries(None, false, false, window, cx);
                     }
                     if project_panel_settings.hide_hidden != new_settings.hide_hidden {
+                        this.update_visible_entries(None, false, false, window, cx);
+                    }
+                    if project_panel_settings.directory_sort != new_settings.directory_sort {
                         this.update_visible_entries(None, false, false, window, cx);
                     }
                     if project_panel_settings.sticky_scroll && !new_settings.sticky_scroll {
@@ -2067,6 +2077,8 @@ impl ProjectPanel {
             .iter()
             .filter(|e| e.worktree_id == worktree_id)
             .collect::<HashSet<_>>();
+        let directory_sort_order =
+            directory_sort_order(ProjectPanelSettings::get_global(cx).directory_sort);
         let latest_entry = marked_entries_in_worktree
             .iter()
             .max_by(|a, b| {
@@ -2074,9 +2086,10 @@ impl ProjectPanel {
                     worktree.entry_for_id(a.entry_id),
                     worktree.entry_for_id(b.entry_id),
                 ) {
-                    (Some(a), Some(b)) => compare_paths(
+                    (Some(a), Some(b)) => compare_paths_with_directory_sort(
                         (a.path.as_std_path(), a.is_file()),
                         (b.path.as_std_path(), b.is_file()),
+                        directory_sort_order,
                     ),
                     _ => cmp::Ordering::Equal,
                 }
@@ -2102,7 +2115,7 @@ impl ProjectPanel {
                 .map(|entry| entry.to_owned())
                 .collect();
 
-        sort_worktree_entries(&mut siblings);
+        sort_worktree_entries(&mut siblings, directory_sort_order);
         let sibling_entry_index = siblings
             .iter()
             .position(|sibling| sibling.id == latest_entry.id)?;
@@ -3229,6 +3242,7 @@ impl ProjectPanel {
         let settings = ProjectPanelSettings::get_global(cx);
         let auto_collapse_dirs = settings.auto_fold_dirs;
         let hide_gitignore = settings.hide_gitignore;
+        let directory_sort_order = directory_sort_order(settings.directory_sort);
         let project = self.project.read(cx);
         let repo_snapshots = project.git_store().read(cx).repo_snapshots(cx);
 
@@ -3440,7 +3454,10 @@ impl ProjectPanel {
                             entry_iter.advance();
                         }
 
-                        par_sort_worktree_entries(&mut visible_worktree_entries);
+                        par_sort_worktree_entries(
+                            &mut visible_worktree_entries,
+                            directory_sort_order,
+                        );
                         new_state.visible_entries.push(VisibleEntriesForWorktree {
                             worktree_id,
                             entries: visible_worktree_entries,
@@ -6101,21 +6118,36 @@ impl ClipboardEntry {
     }
 }
 
-fn cmp<T: AsRef<Entry>>(lhs: T, rhs: T) -> cmp::Ordering {
+fn directory_sort_order(sort: ProjectPanelDirectorySort) -> DirectorySortOrder {
+    match sort {
+        ProjectPanelDirectorySort::DirectoriesFirst => DirectorySortOrder::DirectoriesFirst,
+        ProjectPanelDirectorySort::Mixed => DirectorySortOrder::Mixed,
+        ProjectPanelDirectorySort::DirectoriesLast => DirectorySortOrder::DirectoriesLast,
+    }
+}
+
+fn cmp<T: AsRef<Entry>>(lhs: T, rhs: T, directory_sort_order: DirectorySortOrder) -> cmp::Ordering {
     let entry_a = lhs.as_ref();
     let entry_b = rhs.as_ref();
-    util::paths::compare_rel_paths(
+    compare_rel_paths_with_directory_sort(
         (&entry_a.path, entry_a.is_file()),
         (&entry_b.path, entry_b.is_file()),
+        directory_sort_order,
     )
 }
 
-pub fn sort_worktree_entries(entries: &mut [impl AsRef<Entry>]) {
-    entries.sort_by(|lhs, rhs| cmp(lhs, rhs));
+pub fn sort_worktree_entries(
+    entries: &mut [impl AsRef<Entry>],
+    directory_sort_order: DirectorySortOrder,
+) {
+    entries.sort_by(|lhs, rhs| cmp(lhs, rhs, directory_sort_order));
 }
 
-pub fn par_sort_worktree_entries(entries: &mut Vec<GitEntry>) {
-    entries.par_sort_by(|lhs, rhs| cmp(lhs, rhs));
+pub fn par_sort_worktree_entries(
+    entries: &mut Vec<GitEntry>,
+    directory_sort_order: DirectorySortOrder,
+) {
+    entries.par_sort_by(|lhs, rhs| cmp(lhs, rhs, directory_sort_order));
 }
 
 #[cfg(test)]

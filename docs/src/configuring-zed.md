@@ -4283,6 +4283,7 @@ Run the {#action theme_selector::Toggle} action in the command palette to see a 
     "default_width": 240,
     "dock": "left",
     "entry_spacing": "comfortable",
+    "directory_sort": "directories_first",
     "file_icons": true,
     "folder_icons": true,
     "git_status": true,
@@ -4355,6 +4356,38 @@ Run the {#action theme_selector::Toggle} action in the command palette to see a 
 ```json [settings]
 {
   "entry_spacing": "standard"
+}
+```
+
+### Directory Sort
+
+- Description: Control whether directories appear before, mixed with, or after files.
+- Setting: `directory_sort`
+- Default: `directories_first`
+
+**Options**
+
+1. List directories before files
+
+```json [settings]
+{
+  "directory_sort": "directories_first"
+}
+```
+
+2. Sort directories and files together
+
+```json [settings]
+{
+  "directory_sort": "mixed"
+}
+```
+
+3. List directories after files
+
+```json [settings]
+{
+  "directory_sort": "directories_last"
 }
 ```
 

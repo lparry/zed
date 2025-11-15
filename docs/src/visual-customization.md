@@ -440,6 +440,7 @@ Project panel can be shown/hidden with {#action project_panel::ToggleFocus} ({#k
     "default_width": 240,           // Default panel width
     "dock": "left",                 // Position of the dock (left, right)
     "entry_spacing": "comfortable", // Vertical spacing (comfortable, standard)
+    "directory_sort": "directories_first", // Sort directories relative to files (directories_first, mixed, directories_last)
     "file_icons": true,             // Show/hide file icons
     "folder_icons": true,           // Show/hide folder icons
     "git_status": true,             // Indicate new/updated files
